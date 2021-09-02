@@ -1,0 +1,2 @@
+module mailApplication {
+}
