@@ -22,7 +22,7 @@ public class RepositoryDispatcher {
 	public void addInRepositorys(MailRepository repository)
 	{
 		if(this.repositorys==null)
-			this.repositorys=new HashMap<String,MailRepository>;
-		repositorys.put(repository.g, repository)
+			this.repositorys=new HashMap<String,MailRepository>();
+		repositorys.put(repository.getDomainName(), repository);
 	}
 }
