@@ -11,7 +11,6 @@ public class Account {
 	long mobileNo;
 	
 	public Account(String name, MailId id, String password, List<Mail> allMails, long mobileNo) {
-		super();
 		this.name = name;
 		this.userId = id;
 		this.password = password;

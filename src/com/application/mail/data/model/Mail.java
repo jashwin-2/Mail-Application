@@ -19,7 +19,11 @@ public class Mail implements Cloneable {
 
 	public enum Type
 	{
-		SENT,RECEIVED;
+		SENT("Sent Mails"),RECEIVED("Received Mails");
+		public final String text;
+		Type(String string) {
+			text=string;
+		}
 	}
 
 	public Object clone() throws CloneNotSupportedException

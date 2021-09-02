@@ -1,28 +1,31 @@
 package com.application.mail;
 
-import com.application.mail.data.MailRepository;
+import java.util.Scanner;
+import com.application.mail.data.GmailRepository;
 import com.application.mail.data.RepositoryDispatcher;
-import com.application.mail.data.model.Account;
-import com.application.mail.data.model.MailId;
-import com.application.mail.exceptions.InvalidMailIdException;
-import com.application.mail.view.LoginView;
+import com.application.mail.data.ZohoRepository;
+import com.application.mail.view.MailView;
 
 public class Main {
 
 	public static void main(String[] args) {
+		RepositoryDispatcher dispatcher=new RepositoryDispatcher(null);
+		GmailRepository gmail=GmailRepository.getInstance(dispatcher);
+		ZohoRepository zoho=ZohoRepository.getInstance(dispatcher);
 		
-		RepositoryDispatcher dispatcher= new RepositoryDispatcher(null);
-		MailRepository re=new MailRepository("gmail.com",dispatcher);
-		dispatcher.addInRepositorys(re);
-		try {
-			re.addAccount(new Account("jashwin",new MailId("abc@gmail.com"), "1234", null, 512542561));
-			re.addAccount(new Account("jashwin",new MailId("cde@gmail.com"), "1234", null, 512542561));
-		} catch (InvalidMailIdException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		dispatcher.addInRepositorys(gmail);
+		dispatcher.addInRepositorys(zoho);
+		Scanner sc=new Scanner(System.in);
+		while(true)
+		{
+			
+			System.out.println("Which application do you want to open \n1-->  Zoho Mail\n2-->  Gmail");
+			if(Integer.parseInt(sc.nextLine())==1)
+				new MailView(zoho, "Zoho").loginView();
+			else
+				new MailView(gmail,"Gmail").loginView();
 		}
-		new LoginView(dispatcher, null).start();
-
+		
 	}
 
 }
