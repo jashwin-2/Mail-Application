@@ -33,7 +33,7 @@ public class MailId {
 		domain=str[1];
 	}
 
-	public boolean isValidMail(String str)
+	public static boolean isValidMail(String str)
 	{
 		String regex = "^[A-Za-z0-9+_.-]+@(.+)$";  
 		Pattern pattern = Pattern.compile(regex); 

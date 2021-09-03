@@ -25,6 +25,10 @@ public class Account {
 		allMails.add(mail);
 	}
 	
+	public void deleteMail(Mail mail)
+	{
+		allMails.remove(mail);
+	}
 	public String getName() {
 		return name;
 	}

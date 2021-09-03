@@ -1,18 +1,13 @@
 package com.application.mail.view;
-
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import com.application.mail.exceptions.*;
 import com.application.mail.data.MailRepository;
 import com.application.mail.data.model.Account;
 import com.application.mail.data.model.Mail;
 import com.application.mail.data.model.Mail.Type;
 import com.application.mail.data.model.MailId;
-import com.application.mail.exceptions.AccouuntNotFoundException;
-import com.application.mail.exceptions.DomainNotFoundException;
-
-
 
 public class MailView {
 
@@ -26,7 +21,6 @@ public class MailView {
 		this.name=name;
 		sc=new Scanner(System.in);
 	}
-
 
 	public void loginView() 
 	{
@@ -44,7 +38,40 @@ public class MailView {
 		}
 	}
 	private void createAccount() {
+		String name,password,mailId;
+		Long mobileNo;
+		System.out.println("Enter your name : ");
+		name = sc.nextLine();
+		try {
+			System.out.println("Enter your Mobile No : ");
+			mobileNo= Long.parseLong(sc.nextLine());
 
+			while(true)
+			{
+				System.out.println("Enter the mail id you want wihtout domain name : ");
+				mailId=sc.nextLine();
+
+				if(mailId.contains("@") || !MailId.isValidMail(mailId+="@"+repository.getDomainName())) {
+					System.out.println("Entered mail is id invalid only use Alphabets , numbers , . and _ ");
+					continue;
+				}
+				if(repository.contains(mailId)) {
+					System.out.println("Mail id "+mailId+" is already taken enter a different mail id");
+					continue;
+				}
+				break;
+			}
+			System.out.println("Enter your password : ");
+			password=sc.nextLine();
+			repository.addAccount(new Account(name, new MailId(mailId), password, null, mobileNo));
+			System.out.println("Account created succesfully..\nyour mailId : "+mailId);
+			loginView();
+		}
+		catch(Exception exp)
+		{
+			onExceptionCaught(exp);
+			createAccount();
+		}
 	}
 
 
@@ -55,26 +82,36 @@ public class MailView {
 		try {
 			mailid = new MailId(sc.nextLine());
 			//repository=dispatcher.getRepository(mailid.getDomain());
-			if(repository.conatins(mailid.getId()))
+			if(repository.contains(mailid.getId()))
 				System.out.println("Enter your password");
+			else 
+				throw new AccountNotFoundException(mailid.getId());
 			String password=sc.nextLine();
 			account=repository.authenticate(mailid.getId(), password);
 		}
 		catch(Exception exp)
 		{
-			System.out.println(exp);
 			onExceptionCaught(exp);
 			login();
 		}
-		showMenu();
+		if(account!=null)
+			showMenu();
 	}
 
 
 	private void onExceptionCaught(Exception exp) {
-
+		if(exp instanceof AccountNotFoundException)
+			System.out.println("Entered Account "+((AccountNotFoundException)exp).getId()+" Not found");
+		else if(exp instanceof InvalidPasswordException)
+			System.out.println("The password you entered is in correct");
+		else if(exp instanceof DomainNotFoundException)
+			System.out.println("Entered Domain "+ ((DomainNotFoundException)exp).getDomainName()+" Not Found");
+		else if(exp instanceof InvalidMailIdException)
+			System.out.println("Entered mail ID is in Correct ");
+		else 
+			System.out.println("Invalid Input ");
 
 	}
-
 
 	private void showMenu() {
 		System.out.println("******* Menu *******");
@@ -82,8 +119,14 @@ public class MailView {
 		for (MenuItems option : options) {
 			System.out.println(option.number + " . " + option.text);
 		}
-		int option = Integer.parseInt(sc.nextLine());
-		onMenuItemSelected(MenuItems.getValue(option));
+		try {
+			int option = Integer.parseInt(sc.nextLine());
+			onMenuItemSelected(MenuItems.getValue(option));
+		}catch(NumberFormatException e)
+		{
+			onExceptionCaught(e);
+			showMenu();
+		}
 	}
 
 
@@ -91,7 +134,7 @@ public class MailView {
 		switch(value)
 		{
 		case COMPOSE_MAIL:
-			composeMail();
+			composeMail(null);
 			break;
 		case ALLMAILS:
 			showMails();
@@ -102,6 +145,9 @@ public class MailView {
 		case SENT:
 			showMails(Mail.Type.SENT);
 			break;
+		case DRAFT:
+			showMails(Mail.Type.DRAFT);
+			break;
 		case LOGOUT:
 			loginView();
 			return;
@@ -110,23 +156,25 @@ public class MailView {
 
 	}
 
-
 	private void showMails() {
 		int count=1;
 		List<Mail> mails=new ArrayList<>();
+		List<Mail> allMails=account.getAllMails();
+
+		if(allMails.size()==0) {
+			System.out.println("You don't have any mail to show");
+			return;
+		}
 		System.out.println("************ All Mails ***********");
 		System.out.println("Sno\tName\tSubject\t\tType");
-		for(Mail mail : account.getAllMails())
+		for(int i=allMails.size()-1;i>=0;i--)
 		{
-			mails.add(count, mail);
+			Mail mail=allMails.get(i);
+			mails.add(mail);
 			if(mail.getType().equals(Mail.Type.RECEIVED))
-				System.out.println(count+++"\t"+mail.getSender().getName()+"\t"+mail.getSubject()+"\t\tReceived");
+				System.out.println(count+++"\t"+mail.getSender().getName()+"\t"+mail.getSubject()+"\t\t"+mail.getType());
 			else
-				System.out.println(count+++"\t"+mail.getReceiver().getName()+"\t"+mail.getSubject()+"\tSent");
-		}
-		if(count==1) {
-			System.out.println("You did not have any mails ");
-			return;
+				System.out.println(count+++"\t"+mail.getReceiver().getName()+"\t"+mail.getSubject()+"\t\t"+mail.getType());
 		}
 		getChoiceToOpen(mails,true);
 	}
@@ -135,9 +183,16 @@ public class MailView {
 	private void showMails(Type type) {
 		int count=1;
 		List<Mail> mails=new ArrayList<>();
+		List<Mail> allMails=account.getAllMails();
+		if(allMails.size()==0) {
+			System.out.println("You don't have any "+type.text+" to show");
+			return;
+		}
 		System.out.println("************ "+ type.text+ "***********");
 		System.out.println("Sno\tName\tSubject");
-		for(Mail mail : account.getAllMails())
+		for(int i=allMails.size()-1;i>=0;i--) {
+			Mail mail=allMails.get(i);
+			
 			if(mail.getType().equals(type)) {
 				mails.add(mail);
 				if(mail.getType().equals(Mail.Type.RECEIVED))
@@ -145,9 +200,6 @@ public class MailView {
 				else
 					System.out.println(count+++"\t"+mail.getReceiver().getName()+"\t"+mail.getSubject());
 			}
-		if(count==1) {
-			System.out.println("You don't have any "+type.text+" to show");
-			return;
 		}
 		getChoiceToOpen(mails,false);
 
@@ -155,13 +207,16 @@ public class MailView {
 
 	public void getChoiceToOpen(List<Mail> mails,boolean isCalledFromAllMails)
 	{
-		System.out.println("Which one do you want to open ");
+		int choice=0;
+		System.out.println("\nWhich one(Sno) do you want to open \t\t Press 0 to for previous menu");
 
 		try {
-			int choice=Integer.parseInt(sc.nextLine());
-			mails.get(choice-1);
+			choice=Integer.parseInt(sc.nextLine());
+			onOpen(mails.get(choice-1));
 		}catch(NumberFormatException | IndexOutOfBoundsException e)
 		{
+			if(choice == 0)
+				return;
 			System.out.println("Invalid input ");
 			if(isCalledFromAllMails)
 				showMails();
@@ -169,25 +224,58 @@ public class MailView {
 				showMails(mails.get(0).getType());
 		}
 	}
-	private void onOpen(Mail mail) {
-		// TODO Auto-generated method stub
 
+	private void onOpen(Mail mail) {
+		System.out.println("From : "+mail.getSender()+"\tTo : "+mail.getReceiver());
+		System.out.println("\nSubject : "+mail.getSubject()+"\n\n\t"+mail.getBody()+"\n\nAttachment : "+mail.getAttachment());
+		System.out.print("Enter your choice \n 0--> Back \t1-->Reply\t2-->Delete Mail\t");
+		if(mail.getType().equals(Mail.Type.DRAFT))
+			System.out.println("3--> Send Mail");
+		try {
+			int choice=Integer.parseInt(sc.nextLine());
+
+			if(choice==1)
+				composeMail(mail.getType().equals(Mail.Type.RECEIVED) ? mail.getSender() : mail.getReceiver());
+			else if(choice==2) {
+				account.deleteMail(mail);
+				System.out.println("Mail deleted Succesfully...!");
+			}
+			else if(choice == 3) {
+				mail.setType(Mail.Type.SENT);
+				account.deleteMail(mail);
+				sendMail(mail);
+			}
+			else if(choice==0)
+				return;
+		}catch(NumberFormatException e)
+		{
+			onExceptionCaught(e);
+			onOpen(mail);
+		}
 	}
 
 
-	private void composeMail() {
+	private void composeMail(MailId mailId) {
 		String subject,body,attachement;
-		MailId receiverMailid = null;
-		System.out.println("Enter receivers Mail Id ");
-		try {
-			receiverMailid=new MailId(sc.nextLine());
-			System.out.println("************* COMPOSE *************\nFrom : \t"+account.getUserId()+"\t To: "+receiverMailid);
-		}
-		catch(Exception exp)
+		MailId receiverMailid = mailId;
+		if(receiverMailid==null)
 		{
-			onExceptionCaught(exp);
-			composeMail();
+			System.out.println("Enter receivers Mail Id ");
+			try {
+				receiverMailid=new MailId(sc.nextLine());
+				if(!repository.isValid(receiverMailid))
+					throw new AccountNotFoundException(receiverMailid.getId());
+			}
+			catch(AccountNotFoundException | InvalidMailIdException | DomainNotFoundException exp)
+			{
+				onExceptionCaught(exp);
+				receiverMailid=null;
+				composeMail(null);
+			}
 		}
+		if(receiverMailid==null)
+			return;
+		System.out.println("************* COMPOSE *************\nFrom : \t"+account.getUserId()+"\t To: "+receiverMailid);
 		System.out.print("Subject : \t");
 		subject=sc.nextLine();
 		System.out.println();
@@ -196,16 +284,35 @@ public class MailView {
 		System.out.println();
 		System.out.print("Add attachement  : \t");
 		attachement=sc.nextLine();
-
 		Mail mail=new Mail(account.getUserId(), receiverMailid, subject, body, attachement, Mail.Type.SENT);
-		sendMail(mail);
+		while(true)
+		{
+			System.out.println("Enter your chouce \n 1--> Send Mail \t 2--> Save as Draft");
+			try {
+				int choice=Integer.parseInt(sc.nextLine());
+				if(choice==1){
+					sendMail(mail);
+					break;
+				}
+				else if(choice==2){
+					mail.setType(Mail.Type.DRAFT);
+					account.addInMail(mail);
+					System.out.println("Mail saved as Draft Succesfully...!");
+					break;
+				}
+			}catch(NumberFormatException e){
+				onExceptionCaught(e);
+				continue;
+			}
+		}
 	}
 
 
 	private void sendMail(Mail mail) {
 		try {
 			repository.sendMail(mail);
-		} catch (AccouuntNotFoundException | DomainNotFoundException | CloneNotSupportedException e) {
+			System.out.println("\nMail sent succesfully..!\n");
+		} catch (AuthenticationFailedException | DomainNotFoundException | CloneNotSupportedException e) {
 			onExceptionCaught(e);
 			showMenu();
 		}

@@ -5,7 +5,8 @@ public enum MenuItems {
 	ALLMAILS(2,"Show All Mails"),
 	SENT(3,"Show Sent Mails"),			
 	RECEIVED(4,"Show Received Mails"),
-	LOGOUT(5,"Log out");
+	DRAFT(5,"Show draft mails"),
+	LOGOUT(6,"Log out");
 
 	public final int number;
 	public final String text;

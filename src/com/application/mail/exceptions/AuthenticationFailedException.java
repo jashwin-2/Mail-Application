@@ -1,5 +1,5 @@
 package com.application.mail.exceptions;
 
-public class AuthenticationFailedException extends Exception {
+public abstract class AuthenticationFailedException extends Exception {
 
 }

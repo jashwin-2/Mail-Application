@@ -19,10 +19,23 @@ public class Mail implements Cloneable {
 
 	public enum Type
 	{
-		SENT("Sent Mails"),RECEIVED("Received Mails");
+		SENT("Sent Mails"),RECEIVED("Received Mails"),DRAFT("Draft Mails");
 		public final String text;
 		Type(String string) {
 			text=string;
+		}
+		public String toString()
+		{
+			switch(this)
+			{
+			case SENT:
+				return "Sent";
+			case RECEIVED:
+				return "Received";
+			case DRAFT:
+				return "Draft";
+			}
+			return null;
 		}
 	}
 

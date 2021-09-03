@@ -3,7 +3,8 @@ import java.util.HashMap;
 import java.util.Map;
 import com.application.mail.data.model.Account;
 import com.application.mail.data.model.Mail;
-import com.application.mail.exceptions.AccouuntNotFoundException;
+import com.application.mail.data.model.MailId;
+import com.application.mail.exceptions.AccountNotFoundException;
 import com.application.mail.exceptions.AuthenticationFailedException;
 import com.application.mail.exceptions.DomainNotFoundException;
 import com.application.mail.exceptions.InvalidPasswordException;
@@ -17,11 +18,9 @@ public class MailRepository {
 		this.dispatcher=dispatcher;
 	}
 
-	public boolean conatins(String id) throws AccouuntNotFoundException
+	public boolean contains(String id)
 	{
-		if(accounts.containsKey(id)==false)
-			throw new AccouuntNotFoundException(id);
-		return true;
+		return accounts.containsKey(id);
 	}
 
 	public Account getAccount(String id) 
@@ -45,7 +44,7 @@ public class MailRepository {
 		accounts.put(account.getUserId().getId(), account);
 	}
 
-	public void sendMail(Mail mail) throws DomainNotFoundException, AccouuntNotFoundException, CloneNotSupportedException
+	public void sendMail(Mail mail) throws DomainNotFoundException, AccountNotFoundException, CloneNotSupportedException
 	{
 		String receiverMailId=mail.getReceiver().getId();
 		Account sender=getAccount(mail.getSender().getId());
@@ -59,8 +58,10 @@ public class MailRepository {
 		else
 		{
 			MailRepository receiverrep=dispatcher.getRepository(mail.getReceiver().getDomain());
-			if(receiverrep.conatins(receiverMailId))
+			if(receiverrep.contains(receiverMailId))
 				receiverrep.receiveMail(receiverMail,receiverMailId);
+			else
+				throw new AccountNotFoundException(receiverMailId);
 			sender.addInMail(mail);
 		}
 
@@ -73,5 +74,15 @@ public class MailRepository {
 
 	public String getDomainName() {
 		return domainName;
+	}
+
+	public boolean isValid(MailId mailId) throws DomainNotFoundException{
+		String domainName=mailId.getDomain();
+		boolean found;
+		if(domainName.equals(this.domainName))
+			found =contains(mailId.getId());
+		else
+			found =dispatcher.getRepository(domainName).contains(mailId.getId());
+		return found;
 	}
 }
