@@ -192,7 +192,7 @@ public class MailView {
 		System.out.println("Sno\tName\tSubject");
 		for(int i=allMails.size()-1;i>=0;i--) {
 			Mail mail=allMails.get(i);
-			
+
 			if(mail.getType().equals(type)) {
 				mails.add(mail);
 				if(mail.getType().equals(Mail.Type.RECEIVED))
@@ -200,6 +200,10 @@ public class MailView {
 				else
 					System.out.println(count+++"\t"+mail.getReceiver().getName()+"\t"+mail.getSubject());
 			}
+		}
+		if(count==1) {
+			System.out.println("You don't have any "+type.text+" to show");
+			return;
 		}
 		getChoiceToOpen(mails,false);
 
@@ -212,11 +216,13 @@ public class MailView {
 
 		try {
 			choice=Integer.parseInt(sc.nextLine());
-			onOpen(mails.get(choice-1));
-		}catch(NumberFormatException | IndexOutOfBoundsException e)
-		{
 			if(choice == 0)
 				return;
+			onOpen(mails.get(choice-1));
+
+		}catch(NumberFormatException | IndexOutOfBoundsException e)
+		{
+
 			System.out.println("Invalid input ");
 			if(isCalledFromAllMails)
 				showMails();
@@ -224,6 +230,7 @@ public class MailView {
 				showMails(mails.get(0).getType());
 		}
 	}
+
 
 	private void onOpen(Mail mail) {
 		System.out.println("From : "+mail.getSender()+"\tTo : "+mail.getReceiver());
